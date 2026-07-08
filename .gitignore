@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+*.local
+tsconfig.tsbuildinfo
+
+# Full raw archive stays on your computer only (large; regenerate with `npm run scrape`).
+# The compact bundled corpus in src/data/corpus.json IS committed and shipped.
+data/raw
