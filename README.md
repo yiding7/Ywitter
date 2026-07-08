@@ -9,7 +9,7 @@ It's a parody toy. Every generated post is machine-made and fake. Nothing here w
 ## What it does
 
 - **Style by era** — style samples are grouped by year (and month), pulled from a public archive of ~6,000 old posts. The all-caps tendency is measured per year from the real data, so 2013 shouts and 2018 mostly doesn't.
-- **Bring your own key (any provider)** — Anthropic (Claude), OpenAI, Google Gemini, DeepSeek, Kimi (Moonshot), Qwen (DashScope), MiniMax, or any OpenAI-compatible endpoint. Keys live only in your browser (localStorage) and go straight to the provider you choose.
+- **Bring your own key (any provider)** — Anthropic (Claude), OpenAI, Google Gemini, DeepSeek, Kimi, Qwen, MiniMax, or any OpenAI-compatible endpoint. Keys live only in your browser (localStorage) and go straight to the provider you choose.
 - **Free offline mode** — no key? It falls back to an on-device remix of that era's real posts. Lower coherence, higher chaos.
 - **Era-accurate mockup** — four UI eras (early / classic / modern / dark), matched profile photo and display name per year, and a set of Ye-flavored fonts (Helvetica, Times, Impact, mono). Every card carries a **Parody** label so exports can't be passed off as real.
 - **Content safety** — abusive/slur input is blocked before generating, and slurs that surface from the raw archive are masked in output.
