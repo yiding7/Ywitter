@@ -40,7 +40,18 @@ const INPUT_RE = wordRegex([...HATE, ...INPUT_ONLY_PROFANITY]);
 
 export type ThemeCheck = { ok: boolean; reason?: string };
 
+// Any letter that isn't Latin script (CJK, Cyrillic, Arabic, Hangul, etc.).
+// The style corpus and generators are English-only, so non-English themes
+// otherwise produce incoherent, unrelated output.
+const NON_LATIN_LETTER = /[^\P{L}\p{Script=Latin}]/u;
+
 export function checkTheme(theme: string): ThemeCheck {
+  if (NON_LATIN_LETTER.test(theme)) {
+    return {
+      ok: false,
+      reason: "Themes must be in English — other scripts aren't supported yet.",
+    };
+  }
   const hits = theme.match(INPUT_RE);
   if (hits && hits.length) {
     return {
