@@ -3,6 +3,7 @@ import { toPng } from "html-to-image";
 import {
   availableMonths,
   availableYears,
+  eligibleYears,
   MONTH_NAMES,
   OVERALL,
   yearCount,
@@ -45,6 +46,14 @@ function loadCfg(): { providerId: string; model: string; baseUrl: string } {
   } catch {
     return { providerId: "anthropic", model: "claude-sonnet-5", baseUrl: "" };
   }
+}
+
+// "Overall" picks a fresh random year each generation (uniform over eligible
+// years) so output isn't dominated by whichever year Ye posted most (2018).
+function rollOverallYear(month: number | null): string {
+  const pool = eligibleYears(20, month);
+  const src = pool.length ? pool : eligibleYears(20, null);
+  return src[Math.floor(Math.random() * src.length)];
 }
 
 function pseudoStats(era: EraId) {
@@ -122,6 +131,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [engine, setEngine] = useState<string>("");
   const [card, setCard] = useState<CardData | null>(null);
+  // Era + year actually used for the current card, frozen at generation time so
+  // the mockup stays consistent with the year that was rolled for "Overall".
+  const [usedEra, setUsedEra] = useState<EraId | null>(null);
+  const [usedYear, setUsedYear] = useState<string>("");
 
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -130,6 +143,9 @@ export default function App() {
       ? eraForYear(year === OVERALL ? ERA_YEAR.modern : year)
       : eraOverride;
   const era = ERAS[eraId];
+  // The current card keeps the era it was generated with (see usedEra); the live
+  // `era` above only drives the pre-generation preview and dropdown labels.
+  const shownEra = card && usedEra ? ERAS[usedEra] : era;
   const months = useMemo(() => availableMonths(year), [year]);
   const provider = getProvider(cfg.providerId);
   const apiKey = keys[cfg.providerId] || "";
@@ -164,20 +180,24 @@ export default function App() {
     }
     setLoading(true);
     setError(null);
+    const genYear = year === OVERALL ? rollOverallYear(month) : year;
+    const genEraId: EraId = eraOverride === "auto" ? eraForYear(genYear) : eraOverride;
     const settings: GenSettings | null = apiKey
       ? { providerId: cfg.providerId, model: cfg.model || provider.defaultModel, apiKey, baseUrl: cfg.baseUrl }
       : null;
     try {
-      const res = await generate({ year, month, theme, settings });
-      const prof = profileFor(year, eraId);
+      const res = await generate({ year: genYear, month, theme, settings });
+      const prof = profileFor(genYear, genEraId);
       setCard({
         name: prof.name,
         handle: "@" + prof.handle,
         avatar: prof.avatar,
         text: res.text,
-        dateLabel: dateLabel(year, month, eraId),
-        ...pseudoStats(eraId),
+        dateLabel: dateLabel(genYear, month, genEraId),
+        ...pseudoStats(genEraId),
       });
+      setUsedEra(genEraId);
+      setUsedYear(genYear);
       setEngine(res.engine);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -188,10 +208,10 @@ export default function App() {
 
   async function onExport() {
     if (!cardRef.current) return;
-    const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, backgroundColor: era.bg });
+    const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, backgroundColor: shownEra.bg });
     const a = document.createElement("a");
     a.href = dataUrl;
-    a.download = `ywitter-${year}${month ? "-" + month : ""}.png`;
+    a.download = `ywitter-${usedYear || year}${month ? "-" + month : ""}.png`;
     a.click();
   }
 
@@ -417,12 +437,12 @@ export default function App() {
           {/* Preview */}
           <section className="flex flex-col items-center gap-4">
             <div
-              style={{ background: era.bg }}
+              style={{ background: shownEra.bg }}
               className="w-full max-w-[552px] rounded-2xl p-4"
             >
               {card ? (
                 <ScaledCard>
-                  <YwitterCard ref={cardRef} era={era} data={card} bodyFont={fontStack(fontId)} />
+                  <YwitterCard ref={cardRef} era={shownEra} data={card} bodyFont={fontStack(fontId)} />
                 </ScaledCard>
               ) : (
                 <div className="p-10 text-center text-sm text-zinc-500">
@@ -438,7 +458,10 @@ export default function App() {
                 >
                   Export PNG
                 </button>
-                <span className="text-xs text-zinc-500">engine: {engine}</span>
+                <span className="text-xs text-zinc-500">
+                  engine: {engine}
+                  {year === OVERALL && usedYear ? ` · rolled ${usedYear}` : ""}
+                </span>
               </div>
             )}
           </section>

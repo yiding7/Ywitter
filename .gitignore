@@ -4,6 +4,9 @@ dist
 *.local
 tsconfig.tsbuildinfo
 
+# Claude Code worktrees are throwaway checkouts nested in this repo; never commit them.
+.claude/worktrees/
+
 # Full raw archive stays on your computer only (large; regenerate with `npm run scrape`).
 # The compact bundled corpus in src/data/corpus.json IS committed and shipped.
 data/raw

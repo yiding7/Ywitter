@@ -75,7 +75,7 @@ async function callOpenAICompatible(
         { role: "user", content: user },
       ],
       temperature: 0.9,
-      max_tokens: 300,
+      max_tokens: 512,
     }),
   });
   if (!res.ok) {
@@ -103,7 +103,7 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model: s.model,
-      max_tokens: 300,
+      max_tokens: 512,
       temperature: 0.9,
       system,
       messages: [{ role: "user", content: user }],
