@@ -36,6 +36,18 @@ export function availableYears(): string[] {
   return Object.keys(corpus.years).sort();
 }
 
+// Years with enough real posts to generate coherent output from. Used to roll a
+// random year for "Overall" so high-volume years (e.g. 2018) don't dominate the
+// output — each eligible year is equally likely, regardless of how much Ye posted
+// that year. When a month is given, only years that actually have that month qualify.
+export function eligibleYears(minCount = 20, month: number | null = null): string[] {
+  return availableYears().filter((y) => {
+    if (corpus.years[y].count < minCount) return false;
+    if (month != null && !(String(month) in corpus.years[y].months)) return false;
+    return true;
+  });
+}
+
 export function availableMonths(year: string): number[] {
   if (year === OVERALL) {
     const set = new Set<number>();
