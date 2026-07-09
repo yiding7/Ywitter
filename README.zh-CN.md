@@ -2,6 +2,8 @@
 
 [English](./README.md) · **简体中文**
 
+**在线体验：https://yiding7.github.io/Ywitter/**
+
 选一个年份，给它一个话题，它就会用 Ye 当年真实的发帖风格回复。
 然后生成一张 “Ywitter” 风格的仿真卡片，可以导出 PNG。
 
