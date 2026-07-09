@@ -2,6 +2,8 @@
 
 **English** · [简体中文](./README.zh-CN.md)
 
+**Live demo: https://yiding7.github.io/Ywitter/**
+
 Pick a year, throw it a topic, and it types back a post in the tweeting style Ye actually used that year — the capitalization, the run-ons, the mood. Then it renders a "Ywitter" mockup card you can export as a PNG.
 
 It's a parody toy. Every generated post is machine-made and fake. Nothing here was written by any real person.
