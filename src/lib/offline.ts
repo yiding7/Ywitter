@@ -39,6 +39,20 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Connectors/function words that read as unfinished when a post ends on them,
+// so we trim any trailing run of these ("...and", "...to my") before rendering.
+const CONNECTORS = new Set([
+  "and", "or", "but", "so", "the", "a", "an", "to", "of", "for", "with", "my",
+  "your", "our", "their", "his", "her", "its", "i", "we", "you", "they", "he",
+  "she", "it", "is", "are", "was", "were", "be", "been", "at", "on", "in",
+  "into", "than", "then", "that", "this", "as", "if", "when", "while",
+  "because", "about", "from", "by", "just", "like", "im", "gonna", "cause",
+]);
+
+function bareWord(w: string): string {
+  return w.toLowerCase().replace(/[^a-z']/g, "");
+}
+
 export function generateOffline(
   year: string,
   month: number | null,
@@ -54,35 +68,52 @@ export function generateOffline(
     .toLowerCase()
     .split(/\s+/)
     .filter((w) => w.length > 2);
+  const hasTheme = (s: string) =>
+    themeWords.some((tw) => s.toLowerCase().includes(tw));
 
   // Prefer starting from a tweet that mentions the theme.
-  const themed = starts.filter((s) =>
-    themeWords.some((tw) => s.join(" ").toLowerCase().includes(tw)),
-  );
+  const themed = starts.filter((s) => hasTheme(s.join(" ")));
   let [w1, w2] = (themed.length ? pick(themed) : pick(starts)) as string[];
 
   const out = [w1];
   if (w2 && w2 !== END) out.push(w2);
-  const target = 6 + Math.floor(Math.random() * 22);
+  const target = 8 + Math.floor(Math.random() * 18); // 8..25 words
+  // Remember transitions we've already walked so the chain can't fall into an
+  // A-B-A-B loop, the most common way Markov output turns to mush.
+  const usedTransitions = new Set<string>();
 
-  for (let i = 0; i < 40 && out.length < target; i++) {
+  for (let i = 0; i < 60 && out.length < target; i++) {
     const key = `${out[out.length - 2] ?? START} ${out[out.length - 1]}`;
-    let candidates = chain.get(key);
+    const candidates = chain.get(key);
     if (!candidates || candidates.length === 0) break;
-    // occasionally steer toward a candidate containing a theme word
-    if (themeWords.length && Math.random() < 0.4) {
-      const steered = candidates.filter((c) =>
-        themeWords.some((tw) => c.toLowerCase().includes(tw)),
-      );
-      if (steered.length) candidates = steered;
+
+    // Steer toward the theme most of the time when a themed continuation
+    // exists. These are still real corpus bigrams, so grammar survives.
+    let choices = candidates;
+    if (themeWords.length && Math.random() < 0.6) {
+      const steered = candidates.filter((c) => hasTheme(c));
+      if (steered.length) choices = steered;
     }
-    const next = pick(candidates);
+
+    // Avoid repeating a transition or the previous word when we can.
+    const last = out[out.length - 1];
+    let pool = choices.filter(
+      (c) => c !== last && !usedTransitions.has(`${key}>${c}`),
+    );
+    if (!pool.length) pool = choices.filter((c) => c !== last);
+    if (!pool.length) pool = choices;
+
+    const next = pick(pool);
     if (next === END) {
-      if (out.length >= 5) break;
+      if (out.length >= 6) break;
       continue;
     }
+    usedTransitions.add(`${key}>${next}`);
     out.push(next);
   }
+
+  // Drop a trailing run of connector words so the post doesn't end mid-thought.
+  while (out.length > 6 && CONNECTORS.has(bareWord(out[out.length - 1]))) out.pop();
 
   let text = out
     .join(" ")
@@ -91,7 +122,7 @@ export function generateOffline(
     .trim();
 
   // If the theme never showed up, open with it (Ye loved a hard declarative).
-  if (themeWords.length && !themeWords.some((tw) => text.toLowerCase().includes(tw))) {
+  if (themeWords.length && !hasTheme(text)) {
     text = `${theme.trim()} ${text}`;
   }
 
